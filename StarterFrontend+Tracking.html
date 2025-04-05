@@ -1,238 +1,274 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Personal Trainer</title>
     <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f0f0;
-            color: #333;
-        }
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        color: #333;
+      }
 
-        header {
-            background-color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #ddd;
-        }
+      header {
+        background-color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+      }
 
-        header .logo {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #007bff; /* Example accent color */
-        }
+      header .logo {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #007bff;
+      }
 
-        header nav ul {
-            list-style: none;
-            display: flex;
-        }
+      header nav ul {
+        list-style: none;
+        display: flex;
+      }
 
-        header nav ul li {
-            margin-left: 20px;
-        }
+      header nav ul li {
+        margin-left: 20px;
+      }
 
-        header nav ul li a {
-            text-decoration: none;
-            color: #333;
-        }
+      header nav ul li a {
+        text-decoration: none;
+        color: #333;
+      }
 
-        .main-content {
-            display: flex;
-            padding: 20px;
-        }
+      .main-content {
+        display: flex;
+        padding: 20px;
+      }
 
-        .video-container {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+      .video-container {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
-        .live-video {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            background-color: #ddd;
-            margin-bottom: 20px;
-            position: relative;
-        }
+      .live-video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background-color: #ddd;
+        margin-bottom: 20px;
+        position: relative;
+      }
 
-        #videoElement, #outputCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
+      #videoElement,
+      #outputCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
 
-        .workout-controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
+      .workout-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
 
-        .workout-info {
-            flex: 1;
-            padding: 20px;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
+      .workout-info {
+        flex: 1;
+        padding: 20px;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
 
-        .progress-page, .profile-page, .settings-page {
-            padding: 20px;
-        }
+      .progress-page,
+      .profile-page,
+      .settings-page {
+        padding: 20px;
+      }
 
-        /* Basic button styling */
-        button {
-            padding: 10px 15px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+      /* Basic button styling */
+      button {
+        padding: 10px 15px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
-</head>
-<body>
-
+  </head>
+  <body>
     <header>
-        <div class="logo">AI Trainer</div>
-        <nav>
-            <ul>
-                <li><a href="#workouts">Workouts</a></li>
-                <li><a href="#progress">Progress</a></li>
-                <li><a href="#profile">Profile</a></li>
-                <li><a href="#settings">Settings</a></li>
-                <li><a href="#">Log out</a></li>
-            </ul>
-        </nav>
+      <div class="logo">AI Trainer</div>
+      <nav>
+        <ul>
+          <li><a href="#workouts">Workouts</a></li>
+          <li><a href="#progress">Progress</a></li>
+          <li><a href="#profile">Profile</a></li>
+          <li><a href="#settings">Settings</a></li>
+          <li><a href="#">Log out</a></li>
+        </ul>
+      </nav>
     </header>
 
     <section id="workouts" class="main-content">
-        <div class="video-container">
-            <div class="live-video">
-                <video id="videoElement" autoplay muted></video>
-                <canvas id="outputCanvas"></canvas>
-            </div>
-            <div class="workout-controls">
-                <button>Start</button>
-                <button>Pause</button>
-                <button>Stop</button>
-            </div>
+      <div class="video-container">
+        <div class="live-video">
+          <video id="videoElement" autoplay muted></video>
+          <canvas id="outputCanvas"></canvas>
         </div>
-        <div class="workout-info">
-            <h2>Workout Details</h2>
-            <p>Workout Name: Cardio Blast</p>
-            <p>Exercise: Jumping Jacks</p>
-            <p>Next: High Knees</p>
-            <p>Calories: 150</p>
+        <div class="workout-controls">
+          <button>Start</button>
+          <button>Pause</button>
+          <button>Stop</button>
         </div>
+      </div>
+      <div class="workout-info">
+        <h2>Workout Details</h2>
+        <p>Workout Name: Cardio Blast</p>
+        <p>Exercise: Jumping Jacks</p>
+        <p>Next: High Knees</p>
+        <p>Calories: 150</p>
+      </div>
     </section>
 
     <section id="progress" class="progress-page">
-        <h2>Progress</h2>
-        <p>Visualizations and workout logs will go here.</p>
+      <h2>Progress</h2>
+      <p>Visualizations and workout logs will go here.</p>
     </section>
 
     <section id="profile" class="profile-page">
-        <h2>Profile</h2>
-        <p>User profile information and settings.</p>
+      <h2>Profile</h2>
+      <p>User profile information and settings.</p>
     </section>
 
     <section id="settings" class="settings-page">
-        <h2>Settings</h2>
-        <p>Camera, audio, and account settings.</p>
+      <h2>Settings</h2>
+      <p>Camera, audio, and account settings.</p>
     </section>
 
     <script>
-        const videoElement = document.getElementById('videoElement');
-        const canvasElement = document.getElementById('outputCanvas');
-        const canvasCtx = canvasElement.getContext('2d');
+      const videoElement = document.getElementById("videoElement");
+      const canvasElement = document.getElementById("outputCanvas");
+      const canvasCtx = canvasElement.getContext("2d");
 
-        // Ensure canvas matches video dimensions
-        videoElement.addEventListener('loadedmetadata', () => {
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
-        });
+      // Ensure canvas matches video dimensions
+      videoElement.addEventListener("loadedmetadata", () => {
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+      });
 
-        // Initialize MediaPipe Pose
-        const pose = new Pose({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-        });
+      // Initialize MediaPipe Pose
+      const pose = new Pose({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
 
-        pose.setOptions({
-            modelComplexity: 1, // 0: Lite, 1: Full, 2: Heavy
-            smoothLandmarks: true,
-            enableSegmentation: false,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-        });
+      pose.setOptions({
+        modelComplexity: 1, // 0: Lite, 1: Full, 2: Heavy
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
 
-        pose.onResults((results) => {
-            try {
-                // Clear the canvas
-                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-                // Draw the video frame
-                canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-                // Draw pose landmarks (points)
-                if (results.poseLandmarks) {
-                    results.poseLandmarks.forEach((landmark) => {
-                        canvasCtx.beginPath();
-                        canvasCtx.arc(landmark.x * canvasElement.width, landmark.y * canvasElement.height, 5, 0, 2 * Math.PI);
-                        canvasCtx.fillStyle = '#FF0000'; // Red color for points
-                        canvasCtx.fill();
-                    });
-                }
-            } catch (error) {
-                console.error('Error processing pose results:', error);
-            }
-        });
-
-        // Initialize Camera
-        const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                try {
-                    await pose.send({ image: videoElement });
-                } catch (error) {
-                    console.error('Error sending frame to pose:', error);
-                }
-            },
-            width: 1280,
-            height: 720,
-        });
-
-        // Start the camera
+      pose.onResults((results) => {
         try {
-            camera.start();
-        } catch (error) {
-            console.error('Error starting camera:', error);
-        }
+          // Clear the canvas
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-        // Debugging: Check if video element is working
-        videoElement.addEventListener('error', (e) => {
-            console.error('Video element error:', e);
-        });
+          // Draw the video frame
+          canvasCtx.drawImage(
+            results.image,
+            0,
+            0,
+            canvasElement.width,
+            canvasElement.height
+          );
 
-        // Debugging: Check if camera permissions are granted
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then((stream) => {
-                console.log('Camera permissions granted');
-                videoElement.srcObject = stream;
-            })
-            .catch((error) => {
-                console.error('Camera permissions error:', error);
+          // Draw pose landmarks (points)
+          if (results.poseLandmarks) {
+            results.poseLandmarks.forEach((landmark) => {
+              canvasCtx.beginPath();
+              canvasCtx.arc(
+                landmark.x * canvasElement.width,
+                landmark.y * canvasElement.height,
+                5,
+                0,
+                2 * Math.PI
+              );
+              canvasCtx.fillStyle = "#FF0000"; // Red color for points
+              canvasCtx.fill();
             });
-    </script>
 
-</body>
+            // Draw connections (lines) between landmarks
+            const connections = window.POSE_CONNECTIONS; // MediaPipe's predefined connections
+            connections.forEach(([startIdx, endIdx]) => {
+              const startLandmark = results.poseLandmarks[startIdx];
+              const endLandmark = results.poseLandmarks[endIdx];
+
+              // Draw a line between the two landmarks
+              canvasCtx.beginPath();
+              canvasCtx.moveTo(
+                startLandmark.x * canvasElement.width,
+                startLandmark.y * canvasElement.height
+              );
+              canvasCtx.lineTo(
+                endLandmark.x * canvasElement.width,
+                endLandmark.y * canvasElement.height
+              );
+              canvasCtx.strokeStyle = "#00FF00"; // Green color for lines
+              canvasCtx.lineWidth = 2;
+              canvasCtx.stroke();
+            });
+          }
+        } catch (error) {
+          console.error("Error processing pose results:", error);
+        }
+      });
+
+      // Initialize Camera
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          try {
+            await pose.send({ image: videoElement });
+          } catch (error) {
+            console.error("Error sending frame to pose:", error);
+          }
+        },
+        width: 1280,
+        height: 720,
+      });
+
+      // Start the camera
+      try {
+        camera.start();
+      } catch (error) {
+        console.error("Error starting camera:", error);
+      }
+
+      // Debugging: Check if video element is working
+      videoElement.addEventListener("error", (e) => {
+        console.error("Video element error:", e);
+      });
+
+      // Debugging: Check if camera permissions are granted
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          console.log("Camera permissions granted");
+          videoElement.srcObject = stream;
+        })
+        .catch((error) => {
+          console.error("Camera permissions error:", error);
+        });
+    </script>
+  </body>
 </html>
