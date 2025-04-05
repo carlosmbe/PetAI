@@ -10,9 +10,22 @@
 		B62F37E02DA0E9B3000E89CD /* PetAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B62F37EF2DA0EA0B000E89CD /* Exceptions for "PetAI" folder in "PetAI" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B62F37DF2DA0E9B3000E89CD /* PetAI */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B62F37E22DA0E9B3000E89CD /* PetAI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B62F37EF2DA0EA0B000E89CD /* Exceptions for "PetAI" folder in "PetAI" target */,
+			);
 			path = PetAI;
 			sourceTree = "<group>";
 		};
@@ -256,6 +269,8 @@
 				DEVELOPMENT_TEAM = 5UJL58M7XY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PetAI/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "PetAI needs to see what you're doing in order to offer feedback";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +299,8 @@
 				DEVELOPMENT_TEAM = 5UJL58M7XY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PetAI/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "PetAI needs to see what you're doing in order to offer feedback";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
