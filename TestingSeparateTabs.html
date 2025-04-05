@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PeTAI</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f0f0;
+        color: #333;
+      }
+
+      header {
+        background-color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+      }
+
+      header .logo {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #007bff;
+      }
+
+      header nav ul {
+        list-style: none;
+        display: flex;
+      }
+
+      header nav ul li {
+        margin-left: 20px;
+      }
+
+      header nav ul li a {
+        text-decoration: none;
+        color: #333;
+      }
+
+      .tabs {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+      }
+
+      .tabs button {
+        padding: 10px 20px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 0 10px;
+      }
+
+      .tabs button.active {
+        background-color: #0056b3;
+      }
+
+      .tab-content {
+        display: none;
+        padding: 20px;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .video-container {
+        width: 100%;
+        max-width: 640px;
+        aspect-ratio: 16 / 9;
+        position: relative;
+        margin: 0 auto;
+        background-color: #ddd;
+      }
+
+      #videoElement,
+      #outputCanvas,
+      #uploadedVideo,
+      #uploadedCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #videoUpload {
+        display: block;
+        margin: 20px auto;
+        padding: 10px 15px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      #videoUpload:hover {
+        background-color: #0056b3;
+      }
+
+      #landmarkData {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      #landmarkData p {
+        margin: 5px 0;
+      }
+
+      .workout-controls {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .workout-controls button {
+        padding: 10px 20px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 0 10px;
+      }
+
+      .workout-controls button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      #loggedPositions {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      #loggedPositions ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      #loggedPositions ul li {
+        margin: 5px 0;
+        font-size: 14px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+  </head>
+  <body>
+    <header>
+      <div class="logo">PeTAI</div>
+      <nav>
+        <ul>
+          <li><a href="#workouts">Workouts</a></li>
+          <li><a href="#progress">Progress</a></li>
+          <li><a href="#profile">Profile</a></li>
+          <li><a href="#settings">Settings</a></li>
+          <li><a href="#">Log out</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="live-feed">Live Feed</button>
+      <button class="tab-button" data-tab="video-upload">Video Upload</button>
+    </div>
+
+    <div id="live-feed" class="tab-content active">
+      <div class="video-container">
+        <video id="videoElement" autoplay muted></video>
+        <canvas id="outputCanvas"></canvas>
+      </div>
+      <div id="landmarkData">
+        <h3>Live Feed Landmark Data</h3>
+        <p id="liveLeftHandToShoulder">Left Hand to Shoulder: Calculating...</p>
+        <p id="liveRightHandToShoulder">Right Hand to Shoulder: Calculating...</p>
+        <p id="liveLeftElbowAngle">Left Elbow Angle: Calculating...</p>
+        <p id="liveRightElbowAngle">Right Elbow Angle: Calculating...</p>
+      </div>
+      <div class="workout-controls">
+        <button id="startWorkout">Start Workout</button>
+        <button id="endWorkout" disabled>End Workout</button>
+      </div>
+      <div id="loggedPositions">
+        <h3>Logged Positions</h3>
+        <ul id="positionLog"></ul>
+      </div>
+    </div>
+
+    <div id="video-upload" class="tab-content">
+      <h3>Upload a Video</h3>
+      <input type="file" id="videoUpload" accept="video/*" />
+      <div class="video-container">
+        <video id="uploadedVideo" controls></video>
+        <canvas id="uploadedCanvas" style="display: none;"></canvas>
+      </div>
+      <div id="landmarkData">
+        <h3>Uploaded Video Landmark Data</h3>
+        <p id="uploadLeftHandToShoulder">Left Hand to Shoulder: Calculating...</p>
+        <p id="uploadRightHandToShoulder">Right Hand to Shoulder: Calculating...</p>
+        <p id="uploadLeftElbowAngle">Left Elbow Angle: Calculating...</p>
+        <p id="uploadRightElbowAngle">Right Elbow Angle: Calculating...</p>
+      </div>
+    </div>
+
+    <script>
+      // Tab switching logic
+      const tabButtons = document.querySelectorAll(".tab-button");
+      const tabContents = document.querySelectorAll(".tab-content");
+
+      tabButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          tabButtons.forEach((btn) => btn.classList.remove("active"));
+          tabContents.forEach((content) => content.classList.remove("active"));
+
+          button.classList.add("active");
+          document.getElementById(button.dataset.tab).classList.add("active");
+        });
+      });
+
+      // Helper functions for calculations
+      const calculateDistance = (point1, point2) => {
+        const dx = point1.x - point2.x;
+        const dy = point1.y - point2.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+
+      const calculateAngle = (pointA, pointB, pointC) => {
+        const ab = { x: pointB.x - pointA.x, y: pointB.y - pointA.y };
+        const bc = { x: pointC.x - pointB.x, y: pointC.y - pointB.y };
+        const dotProduct = ab.x * bc.x + ab.y * bc.y;
+        const magnitudeAB = Math.sqrt(ab.x * ab.x + ab.y * ab.y);
+        const magnitudeBC = Math.sqrt(bc.x * bc.x + bc.y * bc.y);
+        const angle = Math.acos(dotProduct / (magnitudeAB * magnitudeBC));
+        return (angle * 180) / Math.PI; // Convert to degrees
+      };
+
+      // Draw landmarks and connections
+      const drawLandmarksAndConnections = (ctx, landmarks, connections, canvasWidth, canvasHeight) => {
+        // Draw landmarks (dots)
+        landmarks.forEach((landmark) => {
+          ctx.beginPath();
+          ctx.arc(
+            landmark.x * canvasWidth,
+            landmark.y * canvasHeight,
+            5, // Radius of the dot
+            0,
+            2 * Math.PI
+          );
+          ctx.fillStyle = "#FF0000"; // Red color for dots
+          ctx.fill();
+        });
+
+        // Draw connections (lines)
+        connections.forEach(([startIdx, endIdx]) => {
+          const startLandmark = landmarks[startIdx];
+          const endLandmark = landmarks[endIdx];
+
+          ctx.beginPath();
+          ctx.moveTo(
+            startLandmark.x * canvasWidth,
+            startLandmark.y * canvasHeight
+          );
+          ctx.lineTo(
+            endLandmark.x * canvasWidth,
+            endLandmark.y * canvasHeight
+          );
+          ctx.strokeStyle = "#00FF00"; // Green color for lines
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      };
+
+      let isWorkoutActive = false;
+      let workoutInterval;
+
+      // Start Workout Button
+      document.getElementById("startWorkout").addEventListener("click", () => {
+        isWorkoutActive = true;
+        document.getElementById("startWorkout").disabled = true;
+        document.getElementById("endWorkout").disabled = false;
+
+        // Log positions every second
+        workoutInterval = setInterval(() => {
+          if (lastPoseLandmarks) {
+            const positions = lastPoseLandmarks.map(
+              (landmark, index) =>
+                `Landmark ${index}: (${landmark.x.toFixed(2)}, ${landmark.y.toFixed(
+                  2
+                )}, ${landmark.z.toFixed(2)})`
+            );
+            const logEntry = document.createElement("li");
+            logEntry.textContent = positions.join(" | ");
+            document.getElementById("positionLog").appendChild(logEntry);
+          }
+        }, 1000);
+      });
+
+      // End Workout Button
+      document.getElementById("endWorkout").addEventListener("click", () => {
+        isWorkoutActive = false;
+        document.getElementById("startWorkout").disabled = false;
+        document.getElementById("endWorkout").disabled = true;
+
+        // Stop logging positions
+        clearInterval(workoutInterval);
+      });
+
+      let lastPoseLandmarks = null;
+
+      // Live feed tracking
+      const videoElement = document.getElementById("videoElement");
+      const canvasElement = document.getElementById("outputCanvas");
+      const canvasCtx = canvasElement.getContext("2d");
+
+      const pose = new Pose({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
+
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      pose.onResults((results) => {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+
+        if (results.poseLandmarks) {
+          const landmarks = results.poseLandmarks;
+          lastPoseLandmarks = landmarks; // Save the latest landmarks for logging
+
+          // Draw landmarks and connections
+          drawLandmarksAndConnections(
+            canvasCtx,
+            landmarks,
+            POSE_CONNECTIONS,
+            canvasElement.width,
+            canvasElement.height
+          );
+
+          // Calculate distances and angles
+          const leftHandToShoulder = calculateDistance(
+            landmarks[15],
+            landmarks[11]
+          );
+          const rightHandToShoulder = calculateDistance(
+            landmarks[16],
+            landmarks[12]
+          );
+          const leftElbowAngle = calculateAngle(
+            landmarks[11],
+            landmarks[13],
+            landmarks[15]
+          );
+          const rightElbowAngle = calculateAngle(
+            landmarks[12],
+            landmarks[14],
+            landmarks[16]
+          );
+
+          // Update the live feed data
+          document.getElementById(
+            "liveLeftHandToShoulder"
+          ).textContent = `Left Hand to Shoulder: ${leftHandToShoulder.toFixed(
+            2
+          )}`;
+          document.getElementById(
+            "liveRightHandToShoulder"
+          ).textContent = `Right Hand to Shoulder: ${rightHandToShoulder.toFixed(
+            2
+          )}`;
+          document.getElementById(
+            "liveLeftElbowAngle"
+          ).textContent = `Left Elbow Angle: ${leftElbowAngle.toFixed(2)}°`;
+          document.getElementById(
+            "liveRightElbowAngle"
+          ).textContent = `Right Elbow Angle: ${rightElbowAngle.toFixed(2)}°`;
+        }
+      });
+
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await pose.send({ image: videoElement });
+        },
+        width: 1280,
+        height: 720,
+      });
+
+      camera.start();
+
+      // Video upload tracking
+      const uploadedPose = new Pose({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
+
+      uploadedPose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      uploadedPose.onResults((results) => {
+        const uploadedCanvas = document.getElementById("uploadedCanvas");
+        const uploadedCtx = uploadedCanvas.getContext("2d");
+
+        uploadedCtx.clearRect(
+          0,
+          0,
+          uploadedCanvas.width,
+          uploadedCanvas.height
+        );
+        uploadedCtx.drawImage(
+          results.image,
+          0,
+          0,
+          uploadedCanvas.width,
+          uploadedCanvas.height
+        );
+
+        if (results.poseLandmarks) {
+          const landmarks = results.poseLandmarks;
+
+          // Draw landmarks and connections
+          drawLandmarksAndConnections(
+            uploadedCtx,
+            landmarks,
+            POSE_CONNECTIONS,
+            uploadedCanvas.width,
+            uploadedCanvas.height
+          );
+
+          // Calculate distances and angles
+          const leftHandToShoulder = calculateDistance(
+            landmarks[15],
+            landmarks[11]
+          );
+          const rightHandToShoulder = calculateDistance(
+            landmarks[16],
+            landmarks[12]
+          );
+          const leftElbowAngle = calculateAngle(
+            landmarks[11],
+            landmarks[13],
+            landmarks[15]
+          );
+          const rightElbowAngle = calculateAngle(
+            landmarks[12],
+            landmarks[14],
+            landmarks[16]
+          );
+
+          // Update the uploaded video data
+          document.getElementById(
+            "uploadLeftHandToShoulder"
+          ).textContent = `Left Hand to Shoulder: ${leftHandToShoulder.toFixed(
+            2
+          )}`;
+          document.getElementById(
+            "uploadRightHandToShoulder"
+          ).textContent = `Right Hand to Shoulder: ${rightHandToShoulder.toFixed(
+            2
+          )}`;
+          document.getElementById(
+            "uploadLeftElbowAngle"
+          ).textContent = `Left Elbow Angle: ${leftElbowAngle.toFixed(2)}°`;
+          document.getElementById(
+            "uploadRightElbowAngle"
+          ).textContent = `Right Elbow Angle: ${rightElbowAngle.toFixed(2)}°`;
+        }
+      });
+
+      document.getElementById("videoUpload").addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const uploadedVideo = document.getElementById("uploadedVideo");
+          const uploadedCanvas = document.getElementById("uploadedCanvas");
+
+          uploadedVideo.src = URL.createObjectURL(file);
+          uploadedVideo.load();
+
+          uploadedVideo.addEventListener("loadedmetadata", () => {
+            uploadedCanvas.width = uploadedVideo.videoWidth;
+            uploadedCanvas.height = uploadedVideo.videoHeight;
+          });
+
+          uploadedVideo.addEventListener("play", () => {
+            uploadedVideo.style.display = "none";
+            uploadedCanvas.style.display = "block";
+
+            const processFrame = async () => {
+              if (!uploadedVideo.paused && !uploadedVideo.ended) {
+                await uploadedPose.send({ image: uploadedVideo });
+                requestAnimationFrame(processFrame);
+              }
+            };
+            processFrame();
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
