@@ -165,6 +165,7 @@
       <div class="workout-controls">
         <button id="startWorkout">Start Workout</button>
         <button id="endWorkout" disabled>End Workout</button>
+        <button id="backToHome">Back to Home</button> <!-- New Back Button -->
       </div>
 
       <div id="workoutSummary">
@@ -185,6 +186,8 @@
     <script>
       const IDEAL_CURL_TOP_ANGLE = { min: 50, max: 70 }; // Ideal range for top of the curl
       const IDEAL_CURL_BOTTOM_ANGLE = { min: 160, max: 180 }; // Ideal range for bottom of the curl
+      const IDEAL_SQUAT_KNEE_ANGLE = 90; // Ideal knee angle
+      const IDEAL_SQUAT_BACK_ANGLE = 45; // Ideal back angle
 
       const workout = {
         isActive: false,
@@ -229,16 +232,37 @@
           console.log("Total Accuracy:", this.totalAccuracy); // Debugging log
 
           if (this.selectedWorkout === "squats") {
+            // Update max knee and back angles
             document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
             document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
             document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"}%`;
-            document.getElementById("kneeAngleFeedback").textContent = "Great job on your squats!";
+
+            // Provide feedback based on max knee angle
+            if (this.maxKneeAngleOverall > 100) {
+              document.getElementById("kneeAngleFeedback").textContent = "You're overextending. Be careful to avoid injury!";
+            } else if (this.maxKneeAngleOverall < 80) {
+              document.getElementById("kneeAngleFeedback").textContent = "You're underextending. Try to go deeper for better form!";
+            } else {
+              document.getElementById("kneeAngleFeedback").textContent = "Great job on your squats!";
+            }
+
+            // Provide feedback for back angle (optional)
             document.getElementById("backAngleFeedback").textContent = "Keep your back straight!";
           } else if (this.selectedWorkout === "bicepCurls") {
+            // Update max elbow angles
             document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Left Elbow Angle: ${this.maxLeftElbowAngle.toFixed(2)}°`;
             document.getElementById("maxBackAngleDisplay").textContent = `Maximum Right Elbow Angle: ${this.maxRightElbowAngle.toFixed(2)}°`;
             document.getElementById("finalAccuracyDisplay").textContent = `Total Curls: ${this.curlCount}`;
-            document.getElementById("kneeAngleFeedback").textContent = "Keep your elbows steady!";
+
+            // Provide feedback based on symmetry
+            const angleDifference = Math.abs(this.maxLeftElbowAngle - this.maxRightElbowAngle);
+            if (angleDifference > 5) {
+              document.getElementById("kneeAngleFeedback").textContent = "Keep your hands symmetric!";
+            } else {
+              document.getElementById("kneeAngleFeedback").textContent = "Great job on your curls!";
+            }
+
+            // Provide generic feedback for back angle (optional)
             document.getElementById("backAngleFeedback").textContent = "Great job on your curls!";
           }
 
@@ -260,9 +284,27 @@
           if (currentTime - this.lastSquatTime >= this.SQUAT_COOLDOWN) {
             this.lastSquatTime = currentTime;
             this.isSquatting = false;
+
+            // Calculate the score for the current squat rep
+            const kneeScore = calculateAngleScore(this.maxKneeAngleOverall, IDEAL_SQUAT_KNEE_ANGLE);
+            const backScore = calculateAngleScore(this.maxBackAngleOverall, IDEAL_SQUAT_BACK_ANGLE);
+            const squatScore = ((kneeScore + backScore) / 2).toFixed(2);
+
+            // Update the live score
+            document.getElementById("totalAccuracy").textContent = `Live Score: ${squatScore}%`;
+
+            // Use the live score as the total score
+            this.totalAccuracy = parseFloat(squatScore);
+
+            // Update the squat count
             this.squatCount += 1;
-            document.getElementById("squatCounter").textContent = `Total Squats: ${this.squatCount}`;
-            console.log(`Squat ${this.squatCount} completed`);
+
+            // Log the max angles for debugging
+            console.log(`Max Knee Angle: ${this.maxKneeAngleOverall}, Max Back Angle: ${this.maxBackAngleOverall}`);
+            console.log(`Squat ${this.squatCount} completed with score: ${squatScore}`);
+            console.log(`Total Score: ${this.totalAccuracy}%`);
+
+            // Do NOT reset max angles here; let the `stop()` method handle it
           }
         },
 
@@ -283,27 +325,25 @@
         },
 
         updateMaxAnglesForSquats(kneeAngle, spineAngle) {
-          // Track the maximum knee angle
-          if (!this.maxKneeAngleOverall || kneeAngle > this.maxKneeAngleOverall) {
+          // Update max knee angle
+          if (kneeAngle > this.maxKneeAngleOverall) {
             this.maxKneeAngleOverall = kneeAngle;
+            console.log(`Updated Max Knee Angle: ${this.maxKneeAngleOverall}`); // Debugging log
           }
 
-          // Track the maximum spine angle
-          if (!this.maxBackAngleOverall || spineAngle > this.maxBackAngleOverall) {
+          // Update max back angle
+          if (spineAngle > this.maxBackAngleOverall) {
             this.maxBackAngleOverall = spineAngle;
+            console.log(`Updated Max Back Angle: ${this.maxBackAngleOverall}`); // Debugging log
           }
-
-          console.log(`Updated Max Angles for Squats - Knee: ${this.maxKneeAngleOverall}, Spine: ${this.maxBackAngleOverall}`);
         },
 
         updateMaxAnglesForCurls(leftElbowAngle, rightElbowAngle) {
-          // Track the maximum left elbow angle
-          if (!this.maxLeftElbowAngle || leftElbowAngle > this.maxLeftElbowAngle) {
+          if (leftElbowAngle > this.maxLeftElbowAngle) {
             this.maxLeftElbowAngle = leftElbowAngle;
           }
 
-          // Track the maximum right elbow angle
-          if (!this.maxRightElbowAngle || rightElbowAngle > this.maxRightElbowAngle) {
+          if (rightElbowAngle > this.maxRightElbowAngle) {
             this.maxRightElbowAngle = rightElbowAngle;
           }
 
@@ -364,6 +404,34 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
         document.getElementById("restartWorkout").style.display = "none";
 
         console.log("Workout restarted");
+      });
+
+      document.getElementById("backToHome").addEventListener("click", () => {
+        // Reset the workout interface
+        workout.isActive = false;
+        workout.squatCount = 0;
+        workout.curlCount = 0;
+        workout.totalAccuracy = 0;
+        workout.maxKneeAngleOverall = 0;
+        workout.maxBackAngleOverall = 0;
+        workout.maxLeftElbowAngle = 0;
+        workout.maxRightElbowAngle = 0;
+
+        // Reset UI elements
+        document.getElementById("squatCounter").textContent = "Total Squats: 0";
+        document.getElementById("totalAccuracy").textContent = "Total Accuracy: Calculating...";
+        document.getElementById("maxKneeAngleDisplay").textContent = "Maximum Knee Angle: N/A";
+        document.getElementById("maxBackAngleDisplay").textContent = "Maximum Back Angle: N/A";
+        document.getElementById("finalAccuracyDisplay").textContent = "Final Accuracy: N/A";
+        document.getElementById("kneeAngleFeedback").textContent = "";
+        document.getElementById("backAngleFeedback").textContent = "";
+        document.getElementById("workoutSummary").style.display = "none";
+
+        // Hide the workout interface and show the landing page
+        document.getElementById("workoutInterface").style.display = "none";
+        document.getElementById("landingPage").style.display = "flex";
+
+        console.log("Returned to home page and cleared output.");
       });
 
       // Handle workout selection
@@ -599,6 +667,13 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
         return score;
       };
 
+      // Helper function to calculate angle score
+      const calculateAngleScore = (actualAngle, idealAngle) => {
+        const deviation = Math.abs(actualAngle - idealAngle);
+        const score = Math.max(0, 100 - deviation * 2); // Deduct points based on deviation
+        return score;
+      };
+
       // Helper function to draw landmarks and connections
       const drawLandmarksAndConnections = (ctx, landmarks, connections, canvasWidth, canvasHeight) => {
         // Draw landmarks (dots)
@@ -651,3 +726,4 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
     </script>
   </body>
 </html>
+``` 
