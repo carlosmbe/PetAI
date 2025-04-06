@@ -24,9 +24,18 @@
         max-width: 800px;
         margin: 20px auto;
         padding: 20px;
-        background-color: #1a1a1a; /* Dark gray for container background */
         border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1); /* Subtle white shadow */
+      }
+
+      #workoutInterface {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a1a1a, #333);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
       }
 
       .video-container {
@@ -34,10 +43,11 @@
         height: 80dvh;
         aspect-ratio: 16 / 9;
         position: relative;
-        background-color: #333; /* Darker gray for video background */
-        margin: 20px auto; /* Center the video container */
+        background-color: rgba(0, 0, 0, 0.3);
+        margin: 20px auto;
         border-radius: 10px;
-        overflow: hidden; /* Ensure the metrics box stays inside the container */
+        overflow: hidden;
+        backdrop-filter: blur(10px);
       }
 
       #videoElement,
@@ -81,18 +91,30 @@
       }
 
       .workout-controls button {
-        padding: 10px 20px;
-        border: none;
-        background-color: #007bff; /* Blue button */
+        padding: 15px 30px;
+        font-size: 16px;
+        margin: 10px;
+        background: linear-gradient(135deg, #007bff, #0056b3);
         color: white;
-        border-radius: 5px;
+        border: none;
+        border-radius: 50px;
         cursor: pointer;
-        margin: 0 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .workout-controls button:hover {
+        background: linear-gradient(135deg, #0056b3, #003d80);
+        transform: scale(1.1);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.5);
       }
 
       .workout-controls button:disabled {
-        background-color: #555; /* Gray for disabled buttons */
+        background: linear-gradient(135deg, #555, #333);
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+        opacity: 0.7;
       }
 
       #workoutSummary {
@@ -138,30 +160,161 @@
         color: #fff;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Subtle text shadow */
       }
+
+      .back-button {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        color: white;
+        border: none;
+        border-radius: 50% !important;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+        z-index: 1000;
+      }
+
+      .back-button:hover {
+        background: linear-gradient(135deg, #0056b3, #003d80) !important;
+        transform: scale(1.1);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.5);
+      }
+
+      .landing-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #1a1a1a, #333);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .title-container {
+        text-align: center;
+        margin-bottom: 50px;
+        animation: fadeInDown 1s ease-out;
+      }
+
+      .workout-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        animation: fadeInUp 1s ease-out;
+      }
+
+      .workout-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+      }
+
+      .workout-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .workout-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+      }
+
+      .workout-title {
+        font-size: 24px;
+        color: #fff;
+        margin-bottom: 10px;
+      }
+
+      .workout-description {
+        color: #ccc;
+        font-size: 14px;
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .particles {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .particle {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: float 15s infinite linear;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
   </head>
   <body>
     <!-- Landing Page -->
-    <div
-      id="landingPage"
-      style="
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background: linear-gradient(135deg, #1a1a1a, #333);
-      "
-    >
-      <div style="text-align: center">
-        <h1 style="color: #fff; font-size: 2.5rem; margin-bottom: 30px">
-          Choose Your Workout
+    <div id="landingPage" class="landing-container">
+      <div class="particles">
+        <!-- Particles will be added via JavaScript -->
+      </div>
+
+      <div class="title-container">
+        <h1 style="color: #fff; font-size: 3.5rem; margin-bottom: 20px">
+          PeTAI Workout Assistant
         </h1>
-        <button class="workout-selection" data-workout="squats">Squats</button>
-        <button class="workout-selection" data-workout="bicepCurls">
-          Bicep Curls
-        </button>
+        <p style="color: #ccc; font-size: 1.2rem; margin-bottom: 40px">
+          Choose your workout and let AI guide your form
+        </p>
+      </div>
+
+      <div class="workout-grid">
+        <div class="workout-card" data-workout="squats">
+          <div class="workout-icon">🏋️</div>
+          <h2 class="workout-title">Squats</h2>
+          <p class="workout-description">
+            Perfect your squat form with real-time feedback
+          </p>
+        </div>
+
+        <div class="workout-card" data-workout="bicepCurls">
+          <div class="workout-icon">💪</div>
+          <h2 class="workout-title">Bicep Curls</h2>
+          <p class="workout-description">
+            Build stronger arms with proper technique
+          </p>
+        </div>
       </div>
     </div>
 
@@ -190,24 +343,7 @@
       <div class="workout-controls">
         <button id="startWorkout">Start Workout</button>
         <button id="endWorkout" disabled>End Workout</button>
-        <style>
-          .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: none;
-            border: none;
-            font-size: 10px;
-            cursor: pointer;
-            padding: 10px;
-            z-index: 1000;
-          }
-
-          .back-button:hover {
-            opacity: 0.7;
-          }
-        </style>
-        <button class="back-button" id="backToHome">Back to Home</button>
+        <button class="back-button" id="backToHome">←</button>
         <!-- New Back Button -->
       </div>
 
@@ -308,7 +444,7 @@
 
             // Provide feedback for back angle (optional)
             document.getElementById("backAngleFeedback").textContent =
-              "Keep your back straight!";
+              "Keep your back at 45 degrees!";
           } else if (this.selectedWorkout === "bicepCurls") {
             // Update max elbow angles
             document.getElementById(
@@ -543,28 +679,19 @@
       });
 
       // Handle workout selection
-      document.querySelectorAll(".workout-selection").forEach((button) => {
-        button.addEventListener("click", () => {
-          const selectedWorkout = button.dataset.workout;
-
-          // Set the selected workout
+      document.querySelectorAll(".workout-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const selectedWorkout = card.dataset.workout;
           workout.selectedWorkout = selectedWorkout;
-
-          // Hide the landing page and show the workout interface
           document.getElementById("landingPage").style.display = "none";
           document.getElementById("workoutInterface").style.display = "block";
 
           if (selectedWorkout === "squats") {
-            // Start squats detection
             pose.onResults(detectSquats);
-            workout.start();
-            console.log("Squats workout selected");
           } else if (selectedWorkout === "bicepCurls") {
-            // Start curls detection
             pose.onResults(detectCurls);
-            workout.start();
-            console.log("Bicep Curls workout selected");
           }
+          workout.start();
         });
       });
 
@@ -893,6 +1020,35 @@
         [25, 27], // Left knee to left ankle
         [26, 28], // Right knee to right ankle
       ];
+
+      function createParticles() {
+        const particlesContainer = document.querySelector(".particles");
+        const numberOfParticles = 20;
+
+        for (let i = 0; i < numberOfParticles; i++) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+
+          // Random size between 5 and 20 pixels
+          const size = Math.random() * 15 + 5;
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+
+          // Random starting position
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.top = `${Math.random() * 100}%`;
+
+          // Random animation duration and delay
+          const duration = Math.random() * 10 + 5;
+          const delay = Math.random() * 5;
+          particle.style.animation = `float ${duration}s ${delay}s infinite linear`;
+
+          particlesContainer.appendChild(particle);
+        }
+      }
+
+      // Call this function when the page loads
+      document.addEventListener("DOMContentLoaded", createParticles);
     </script>
   </body>
 </html>
