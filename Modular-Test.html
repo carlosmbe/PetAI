@@ -109,7 +109,11 @@
         padding: 15px 30px;
         font-size: 18px;
         margin: 15px;
-        background: linear-gradient(135deg, #007bff, #0056b3); /* Gradient blue */
+        background: linear-gradient(
+          135deg,
+          #007bff,
+          #0056b3
+        ); /* Gradient blue */
         color: white;
         border: none;
         border-radius: 50px; /* Rounded buttons */
@@ -119,13 +123,17 @@
       }
 
       #landingPage button:hover {
-        background: linear-gradient(135deg, #0056b3, #003d80); /* Darker gradient on hover */
+        background: linear-gradient(
+          135deg,
+          #0056b3,
+          #003d80
+        ); /* Darker gradient on hover */
         transform: scale(1.1); /* Slightly enlarge on hover */
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.5); /* Stronger shadow on hover */
       }
 
       #landingPage h1 {
-        font-family: 'Arial', sans-serif;
+        font-family: "Arial", sans-serif;
         font-weight: bold;
         color: #fff;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Subtle text shadow */
@@ -135,18 +143,30 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
   </head>
   <body>
-
     <!-- Landing Page -->
-    <div id="landingPage" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #1a1a1a, #333);">
-      <div style="text-align: center;">
-        <h1 style="color: #fff; font-size: 2.5rem; margin-bottom: 30px;">Choose Your Workout</h1>
+    <div
+      id="landingPage"
+      style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #1a1a1a, #333);
+      "
+    >
+      <div style="text-align: center">
+        <h1 style="color: #fff; font-size: 2.5rem; margin-bottom: 30px">
+          Choose Your Workout
+        </h1>
         <button class="workout-selection" data-workout="squats">Squats</button>
-        <button class="workout-selection" data-workout="bicepCurls">Bicep Curls</button>
+        <button class="workout-selection" data-workout="bicepCurls">
+          Bicep Curls
+        </button>
       </div>
     </div>
 
     <!-- Workout Interface -->
-    <div id="workoutInterface" style="display: none;">
+    <div id="workoutInterface" style="display: none">
       <div class="video-container">
         <video id="videoElement" autoplay muted></video>
         <canvas id="outputCanvas"></canvas>
@@ -158,23 +178,48 @@
           <p id="liveSpineAngle">Spine Angle: Calculating...</p>
           <p id="totalAccuracy">Total Accuracy: Calculating...</p>
           <p id="squatCounter">Total Squats: 0</p>
-          <p id="countdownTimer" style="font-size: 14px; font-weight: bold; color: red;">Ready to start!</p>
+          <p
+            id="countdownTimer"
+            style="font-size: 14px; font-weight: bold; color: red"
+          >
+            Ready to start!
+          </p>
         </div>
       </div>
 
       <div class="workout-controls">
         <button id="startWorkout">Start Workout</button>
         <button id="endWorkout" disabled>End Workout</button>
-        <button id="backToHome">Back to Home</button> <!-- New Back Button -->
+        <style>
+          .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: none;
+            border: none;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 1000;
+          }
+
+          .back-button:hover {
+            opacity: 0.7;
+          }
+        </style>
+        <button class="back-button" id="backToHome">Back to Home</button>
+        <!-- New Back Button -->
       </div>
 
       <div id="workoutSummary">
         <h3>Workout Summary</h3>
-        <p id="maxKneeAngleDisplay">Maximum Knee Angle: </p>
-        <p id="kneeAngleFeedback" style="font-size: 14px; color: #fff;"> </p> <!-- Feedback for knee angle -->
+        <p id="maxKneeAngleDisplay">Maximum Knee Angle:</p>
+        <p id="kneeAngleFeedback" style="font-size: 14px; color: #fff"></p>
+        <!-- Feedback for knee angle -->
 
         <p id="maxBackAngleDisplay">Maximum Back Angle: N/A</p>
-        <p id="backAngleFeedback" style="font-size: 14px; color: #fff;"> </p> <!-- Feedback for back angle -->
+        <p id="backAngleFeedback" style="font-size: 14px; color: #fff"></p>
+        <!-- Feedback for back angle -->
 
         <p id="finalAccuracyDisplay">Final Accuracy: N/A</p>
         <div class="workout-controls">
@@ -233,37 +278,64 @@
 
           if (this.selectedWorkout === "squats") {
             // Update max knee and back angles
-            document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
-            document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
-            document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"}%`;
+            document.getElementById(
+              "maxKneeAngleDisplay"
+            ).textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(
+              2
+            )}°`;
+            document.getElementById(
+              "maxBackAngleDisplay"
+            ).textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(
+              2
+            )}°`;
+            document.getElementById(
+              "finalAccuracyDisplay"
+            ).textContent = `Final Accuracy: ${
+              this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"
+            }%`;
 
             // Provide feedback based on max knee angle
             if (this.maxKneeAngleOverall > 100) {
-              document.getElementById("kneeAngleFeedback").textContent = "You're overextending. Be careful to avoid injury!";
+              document.getElementById("kneeAngleFeedback").textContent =
+                "You're overextending. Be careful to avoid injury!";
             } else if (this.maxKneeAngleOverall < 80) {
-              document.getElementById("kneeAngleFeedback").textContent = "You're underextending. Try to go deeper for better form!";
+              document.getElementById("kneeAngleFeedback").textContent =
+                "You're underextending. Try to go deeper for better form!";
             } else {
-              document.getElementById("kneeAngleFeedback").textContent = "Great job on your squats!";
+              document.getElementById("kneeAngleFeedback").textContent =
+                "Great job on your squats!";
             }
 
             // Provide feedback for back angle (optional)
-            document.getElementById("backAngleFeedback").textContent = "Keep your back straight!";
+            document.getElementById("backAngleFeedback").textContent =
+              "Keep your back straight!";
           } else if (this.selectedWorkout === "bicepCurls") {
             // Update max elbow angles
-            document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Left Elbow Angle: ${this.maxLeftElbowAngle.toFixed(2)}°`;
-            document.getElementById("maxBackAngleDisplay").textContent = `Maximum Right Elbow Angle: ${this.maxRightElbowAngle.toFixed(2)}°`;
-            document.getElementById("finalAccuracyDisplay").textContent = `Total Curls: ${this.curlCount}`;
+            document.getElementById(
+              "maxKneeAngleDisplay"
+            ).textContent = `Maximum Left Elbow Angle: ${this.maxLeftElbowAngle.toFixed(
+              2
+            )}°`;
+            document.getElementById(
+              "maxBackAngleDisplay"
+            ).textContent = `Maximum Right Elbow Angle: ${this.maxRightElbowAngle.toFixed(
+              2
+            )}°`;
+            document.getElementById(
+              "finalAccuracyDisplay"
+            ).textContent = `Total Curls: ${this.curlCount}`;
 
             // Provide feedback based on symmetry
-            const angleDifference = Math.abs(this.maxLeftElbowAngle - this.maxRightElbowAngle);
+            const angleDifference = Math.abs(
+              this.maxLeftElbowAngle - this.maxRightElbowAngle
+            );
             if (angleDifference > 5) {
-              document.getElementById("kneeAngleFeedback").textContent = "Keep your hands symmetric!";
+              document.getElementById("kneeAngleFeedback").textContent =
+                "Ensure your hands stay symmetric to avoid imbalance!";
             } else {
-              document.getElementById("kneeAngleFeedback").textContent = "Great job on your curls!";
+              document.getElementById("kneeAngleFeedback").textContent =
+                "Great job on your curls!";
             }
-
-            // Provide generic feedback for back angle (optional)
-            document.getElementById("backAngleFeedback").textContent = "Great job on your curls!";
           }
 
           console.log("Workout stopped");
@@ -286,25 +358,33 @@
             this.isSquatting = false;
 
             // Calculate the score for the current squat rep
-            const kneeScore = calculateAngleScore(this.maxKneeAngleOverall, IDEAL_SQUAT_KNEE_ANGLE);
-            const backScore = calculateAngleScore(this.maxBackAngleOverall, IDEAL_SQUAT_BACK_ANGLE);
+            const kneeScore = calculateAngleScore(
+              this.maxKneeAngleOverall,
+              IDEAL_SQUAT_KNEE_ANGLE
+            );
+            const backScore = calculateAngleScore(
+              this.maxBackAngleOverall,
+              IDEAL_SQUAT_BACK_ANGLE
+            );
             const squatScore = ((kneeScore + backScore) / 2).toFixed(2);
 
             // Update the live score
-            document.getElementById("totalAccuracy").textContent = `Live Score: ${squatScore}%`;
-
-            // Use the live score as the total score
-            this.totalAccuracy = parseFloat(squatScore);
+            document.getElementById(
+              "totalAccuracy"
+            ).textContent = `Live Score: ${squatScore}%`;
 
             // Update the squat count
             this.squatCount += 1;
+            // Add this line to update the display
+            document.getElementById(
+              "squatCounter"
+            ).textContent = `Total Squats: ${this.squatCount}`;
 
-            // Log the max angles for debugging
-            console.log(`Max Knee Angle: ${this.maxKneeAngleOverall}, Max Back Angle: ${this.maxBackAngleOverall}`);
-            console.log(`Squat ${this.squatCount} completed with score: ${squatScore}`);
-            console.log(`Total Score: ${this.totalAccuracy}%`);
+            this.totalAccuracy = parseFloat(squatScore);
 
-            // Do NOT reset max angles here; let the `stop()` method handle it
+            console.log(
+              `Squat ${this.squatCount} completed with score: ${squatScore}`
+            );
           }
         },
 
@@ -319,7 +399,9 @@
             this.lastCurlTime = currentTime;
             this.isCurling = false;
             this.curlCount += 1;
-            document.getElementById("squatCounter").textContent = `Total Curls: ${this.curlCount}`;
+            document.getElementById(
+              "squatCounter"
+            ).textContent = `Total Curls: ${this.curlCount}`;
             console.log(`Curl ${this.curlCount} completed`);
           }
         },
@@ -347,7 +429,9 @@
             this.maxRightElbowAngle = rightElbowAngle;
           }
 
-          console.log(`Updated Max Angles for Curls - Left Elbow: ${this.maxLeftElbowAngle}, Right Elbow: ${this.maxRightElbowAngle}`);
+          console.log(
+            `Updated Max Angles for Curls - Left Elbow: ${this.maxLeftElbowAngle}, Right Elbow: ${this.maxRightElbowAngle}`
+          );
         },
       };
 
@@ -377,34 +461,54 @@
         workout.stop();
 
         // Ensure the Restart and Resume buttons are displayed
-        document.getElementById("restartWorkout").style.display = "inline-block";
+        document.getElementById("restartWorkout").style.display =
+          "inline-block";
 
-        console.log("Workout stopped. Restart and Resume buttons are now visible.");
+        console.log(
+          "Workout stopped. Restart and Resume buttons are now visible."
+        );
       });
 
-      document.getElementById("restartWorkout").addEventListener("click", () => {
-        // Reset all workout variables
-        workout.isActive = false;
-        workout.squatCount = 0;
-        workout.totalAccuracy = 0;
-        workout.totalReps = 0;
-        workout.maxKneeAngleOverall = 0;
-        workout.maxBackAngleOverall = 0;
-        workout.maxLeftElbowAngle = 0;
-        workout.maxRightElbowAngle = 0;
+      document
+        .getElementById("restartWorkout")
+        .addEventListener("click", () => {
+          // Reset all workout variables
+          workout.isActive = false;
+          workout.squatCount = 0;
+          workout.totalAccuracy = 0;
+          workout.totalReps = 0;
+          workout.maxKneeAngleOverall = 0;
+          workout.maxBackAngleOverall = 0;
+          workout.maxLeftElbowAngle = 0;
+          workout.maxRightElbowAngle = 0;
 
-        // Reset UI elements
-        document.getElementById("squatCounter").textContent = "Total Squats: 0";
-        document.getElementById("totalAccuracy").textContent = "Total Accuracy: Calculating...";
-        document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
-document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
-document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"}%`;
-        document.getElementById("workoutSummary").style.display = "none";
-        document.getElementById("countdownTimer").textContent = "Ready to start a new workout!";
-        document.getElementById("restartWorkout").style.display = "none";
+          // Reset UI elements
+          document.getElementById("squatCounter").textContent =
+            "Total Squats: 0";
+          document.getElementById("totalAccuracy").textContent =
+            "Total Accuracy: Calculating...";
+          document.getElementById(
+            "maxKneeAngleDisplay"
+          ).textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(
+            2
+          )}°`;
+          document.getElementById(
+            "maxBackAngleDisplay"
+          ).textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(
+            2
+          )}°`;
+          document.getElementById(
+            "finalAccuracyDisplay"
+          ).textContent = `Final Accuracy: ${
+            this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"
+          }%`;
+          document.getElementById("workoutSummary").style.display = "none";
+          document.getElementById("countdownTimer").textContent =
+            "Ready to start a new workout!";
+          document.getElementById("restartWorkout").style.display = "none";
 
-        console.log("Workout restarted");
-      });
+          console.log("Workout restarted");
+        });
 
       document.getElementById("backToHome").addEventListener("click", () => {
         // Reset the workout interface
@@ -419,10 +523,14 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
 
         // Reset UI elements
         document.getElementById("squatCounter").textContent = "Total Squats: 0";
-        document.getElementById("totalAccuracy").textContent = "Total Accuracy: Calculating...";
-        document.getElementById("maxKneeAngleDisplay").textContent = "Maximum Knee Angle: N/A";
-        document.getElementById("maxBackAngleDisplay").textContent = "Maximum Back Angle: N/A";
-        document.getElementById("finalAccuracyDisplay").textContent = "Final Accuracy: N/A";
+        document.getElementById("totalAccuracy").textContent =
+          "Total Accuracy: Calculating...";
+        document.getElementById("maxKneeAngleDisplay").textContent =
+          "Maximum Knee Angle: N/A";
+        document.getElementById("maxBackAngleDisplay").textContent =
+          "Maximum Back Angle: N/A";
+        document.getElementById("finalAccuracyDisplay").textContent =
+          "Final Accuracy: N/A";
         document.getElementById("kneeAngleFeedback").textContent = "";
         document.getElementById("backAngleFeedback").textContent = "";
         document.getElementById("workoutSummary").style.display = "none";
@@ -466,7 +574,8 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
       const canvasCtx = canvasElement.getContext("2d");
 
       const pose = new Pose({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
       });
 
       pose.setOptions({
@@ -506,7 +615,13 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
         if (!workout.isActive) return; // Ensure the workout is active
 
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
 
         if (results.poseLandmarks) {
           const landmarks = results.poseLandmarks;
@@ -524,18 +639,32 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
           const metrics = calculateSquatMetrics(landmarks);
 
           // Update live metrics for squats
-          document.getElementById("liveKneeAngle").textContent = `Knee Angle: ${(
-            (metrics.leftKneeAngle + metrics.rightKneeAngle) / 2
+          document.getElementById(
+            "liveKneeAngle"
+          ).textContent = `Knee Angle: ${(
+            (metrics.leftKneeAngle + metrics.rightKneeAngle) /
+            2
           ).toFixed(2)}°`;
           document.getElementById("liveHipAngle").textContent = `Hip Angle: ${(
-            (metrics.leftHipAngle + metrics.rightHipAngle) / 2
+            (metrics.leftHipAngle + metrics.rightHipAngle) /
+            2
           ).toFixed(2)}°`;
-          document.getElementById("liveSpineAngle").textContent = `Spine Angle: ${metrics.spineAngle.toFixed(2)}°`;
+          document.getElementById(
+            "liveSpineAngle"
+          ).textContent = `Spine Angle: ${metrics.spineAngle.toFixed(2)}°`;
 
           // Detect squat motion
-          if (!workout.isSquatting && metrics.leftKneeAngle > 70 && metrics.rightKneeAngle > 70) {
+          if (
+            !workout.isSquatting &&
+            metrics.leftKneeAngle > 70 &&
+            metrics.rightKneeAngle > 70
+          ) {
             workout.handleSquatStart();
-          } else if (workout.isSquatting && metrics.leftKneeAngle < 15 && metrics.rightKneeAngle < 15) {
+          } else if (
+            workout.isSquatting &&
+            metrics.leftKneeAngle < 15 &&
+            metrics.rightKneeAngle < 15
+          ) {
             workout.handleSquatEnd();
           }
 
@@ -554,7 +683,13 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
         if (!workout.isActive) return; // Ensure the workout is active
 
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(
+          results.image,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
 
         if (results.poseLandmarks) {
           const landmarks = results.poseLandmarks;
@@ -569,12 +704,24 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
           );
 
           // Calculate elbow angles
-          const leftElbowAngle = calculateAngle(landmarks[11], landmarks[13], landmarks[15]);
-          const rightElbowAngle = calculateAngle(landmarks[12], landmarks[14], landmarks[16]);
+          const leftElbowAngle = calculateAngle(
+            landmarks[11],
+            landmarks[13],
+            landmarks[15]
+          );
+          const rightElbowAngle = calculateAngle(
+            landmarks[12],
+            landmarks[14],
+            landmarks[16]
+          );
 
           // Update live metrics for curls
-          document.getElementById("liveKneeAngle").textContent = `Left Elbow Angle: ${leftElbowAngle.toFixed(2)}°`;
-          document.getElementById("liveHipAngle").textContent = `Right Elbow Angle: ${rightElbowAngle.toFixed(2)}°`;
+          document.getElementById(
+            "liveKneeAngle"
+          ).textContent = `Left Elbow Angle: ${leftElbowAngle.toFixed(2)}°`;
+          document.getElementById(
+            "liveHipAngle"
+          ).textContent = `Right Elbow Angle: ${rightElbowAngle.toFixed(2)}°`;
           document.getElementById("liveSpineAngle").textContent = ""; // Clear unused metric
 
           // Calculate live score
@@ -583,12 +730,22 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
           const averageScore = ((leftScore + rightScore) / 2).toFixed(2);
 
           // Display live score
-          document.getElementById("totalAccuracy").textContent = `Live Score: ${averageScore}%`;
+          document.getElementById(
+            "totalAccuracy"
+          ).textContent = `Live Score: ${averageScore}%`;
 
           // Detect curl motion
-          if (!workout.isCurling && leftElbowAngle < 60 && rightElbowAngle < 60) {
+          if (
+            !workout.isCurling &&
+            leftElbowAngle < 60 &&
+            rightElbowAngle < 60
+          ) {
             workout.handleCurlStart();
-          } else if (workout.isCurling && leftElbowAngle > 150 && rightElbowAngle > 150) {
+          } else if (
+            workout.isCurling &&
+            leftElbowAngle > 150 &&
+            rightElbowAngle > 150
+          ) {
             workout.handleCurlEnd();
           }
 
@@ -614,7 +771,11 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
         const leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
         const rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
         const leftHipAngle = calculateAngle(leftShoulder, leftHip, leftKnee);
-        const rightHipAngle = calculateAngle(rightShoulder, rightHip, rightKnee);
+        const rightHipAngle = calculateAngle(
+          rightShoulder,
+          rightHip,
+          rightKnee
+        );
         const spineAngle = calculateAngle(leftShoulder, leftHip, leftAnkle);
 
         return {
@@ -642,11 +803,17 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
         let score = 0;
 
         // Check if the angle is within the ideal range for the top of the curl
-        if (elbowAngle >= IDEAL_CURL_TOP_ANGLE.min && elbowAngle <= IDEAL_CURL_TOP_ANGLE.max) {
+        if (
+          elbowAngle >= IDEAL_CURL_TOP_ANGLE.min &&
+          elbowAngle <= IDEAL_CURL_TOP_ANGLE.max
+        ) {
           score = 100; // Perfect score for the top of the curl
         }
         // Check if the angle is within the ideal range for the bottom of the curl
-        else if (elbowAngle >= IDEAL_CURL_BOTTOM_ANGLE.min && elbowAngle <= IDEAL_CURL_BOTTOM_ANGLE.max) {
+        else if (
+          elbowAngle >= IDEAL_CURL_BOTTOM_ANGLE.min &&
+          elbowAngle <= IDEAL_CURL_BOTTOM_ANGLE.max
+        ) {
           score = 100; // Perfect score for the bottom of the curl
         }
         // Calculate a proportional score for angles outside the ideal range
@@ -675,7 +842,13 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
       };
 
       // Helper function to draw landmarks and connections
-      const drawLandmarksAndConnections = (ctx, landmarks, connections, canvasWidth, canvasHeight) => {
+      const drawLandmarksAndConnections = (
+        ctx,
+        landmarks,
+        connections,
+        canvasWidth,
+        canvasHeight
+      ) => {
         // Draw landmarks (dots)
         landmarks.forEach((landmark) => {
           ctx.beginPath();
@@ -700,10 +873,7 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
             startLandmark.x * canvasWidth,
             startLandmark.y * canvasHeight
           );
-          ctx.lineTo(
-            endLandmark.x * canvasWidth,
-            endLandmark.y * canvasHeight
-          );
+          ctx.lineTo(endLandmark.x * canvasWidth, endLandmark.y * canvasHeight);
           ctx.strokeStyle = "#00FF00"; // Green color for lines
           ctx.lineWidth = 2;
           ctx.stroke();
@@ -726,4 +896,3 @@ document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: $
     </script>
   </body>
 </html>
-``` 
