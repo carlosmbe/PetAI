@@ -98,7 +98,7 @@
       #workoutSummary {
         text-align: center;
         margin-top: 20px;
-        display: none;
+        display: none; /* Initially hidden */
       }
 
       #workoutSummary p {
@@ -106,18 +106,29 @@
       }
 
       #landingPage button {
-        padding: 20px 40px;
+        padding: 15px 30px;
         font-size: 18px;
-        margin: 20px;
-        background-color: #007bff; /* Blue button */
+        margin: 15px;
+        background: linear-gradient(135deg, #007bff, #0056b3); /* Gradient blue */
         color: white;
         border: none;
-        border-radius: 10px;
-        cursor: pointer;
+        border-radius: 50px; /* Rounded buttons */
+        cursor: pointer; /* Ensures the pointer cursor appears on hover */
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); /* Subtle shadow */
       }
 
       #landingPage button:hover {
-        background-color: #0056b3; /* Darker blue on hover */
+        background: linear-gradient(135deg, #0056b3, #003d80); /* Darker gradient on hover */
+        transform: scale(1.1); /* Slightly enlarge on hover */
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.5); /* Stronger shadow on hover */
+      }
+
+      #landingPage h1 {
+        font-family: 'Arial', sans-serif;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Subtle text shadow */
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
@@ -126,11 +137,12 @@
   <body>
 
     <!-- Landing Page -->
-    <div id="landingPage" style="text-align: center; margin-top: 50px;">
-      <h1>Choose Your Workout</h1>
-      <button class="workout-selection" data-workout="squats">Squats</button>
-      <button class="workout-selection" data-workout="bicepCurls">Bicep Curls</button>
-      <button class="workout-selection" data-workout="planks">Planks</button>
+    <div id="landingPage" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #1a1a1a, #333);">
+      <div style="text-align: center;">
+        <h1 style="color: #fff; font-size: 2.5rem; margin-bottom: 30px;">Choose Your Workout</h1>
+        <button class="workout-selection" data-workout="squats">Squats</button>
+        <button class="workout-selection" data-workout="bicepCurls">Bicep Curls</button>
+      </div>
     </div>
 
     <!-- Workout Interface -->
@@ -157,8 +169,12 @@
 
       <div id="workoutSummary">
         <h3>Workout Summary</h3>
-        <p id="maxKneeAngleDisplay">Maximum Knee Angle: N/A</p>
+        <p id="maxKneeAngleDisplay">Maximum Knee Angle: </p>
+        <p id="kneeAngleFeedback" style="font-size: 14px; color: #fff;"> </p> <!-- Feedback for knee angle -->
+
         <p id="maxBackAngleDisplay">Maximum Back Angle: N/A</p>
+        <p id="backAngleFeedback" style="font-size: 14px; color: #fff;"> </p> <!-- Feedback for back angle -->
+
         <p id="finalAccuracyDisplay">Final Accuracy: N/A</p>
         <div class="workout-controls">
           <button id="restartWorkout">Restart Workout</button>
@@ -167,27 +183,31 @@
     </div>
 
     <script>
-      // Modular workout logic
+      const IDEAL_CURL_TOP_ANGLE = { min: 50, max: 70 }; // Ideal range for top of the curl
+      const IDEAL_CURL_BOTTOM_ANGLE = { min: 160, max: 180 }; // Ideal range for bottom of the curl
+
       const workout = {
         isActive: false,
+        selectedWorkout: null,
         isSquatting: false,
+        isCurling: false,
         squatCount: 0,
+        curlCount: 0,
         lastSquatTime: 0,
-        maxKneeAngle: 0,
-        maxBackAngle: 0,
+        lastCurlTime: 0,
+        SQUAT_COOLDOWN: 500,
+        CURL_COOLDOWN: 500,
         maxKneeAngleOverall: 0,
         maxBackAngleOverall: 0,
-        totalAccuracy: 0,
-        totalReps: 0,
-        idealKneeAngle: 90,
-        idealBackAngle: 0,
-        SQUAT_COOLDOWN: 500,
+        maxLeftElbowAngle: 0,
+        maxRightElbowAngle: 0, // New properties for curls
 
         start() {
           this.isActive = true;
           this.resetRepState();
-          this.squatCount = 0; // Reset squat count
-          document.getElementById("squatCounter").textContent = `Total Squats: ${this.squatCount}`;
+          this.squatCount = 0;
+          this.curlCount = 0;
+          document.getElementById("squatCounter").textContent = `Total Reps: 0`;
           console.log("Workout started");
         },
 
@@ -195,46 +215,43 @@
           this.isActive = false;
           document.getElementById("startWorkout").disabled = false;
           document.getElementById("endWorkout").disabled = true;
-          this.displaySummary();
+
+          // Clear the canvas
+          canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+          // Display the workout summary
+          const summaryElement = document.getElementById("workoutSummary");
+          summaryElement.style.display = "block";
+
+          console.log("Selected Workout:", this.selectedWorkout); // Debugging log
+          console.log("Max Knee Angle:", this.maxKneeAngleOverall); // Debugging log
+          console.log("Max Back Angle:", this.maxBackAngleOverall); // Debugging log
+          console.log("Total Accuracy:", this.totalAccuracy); // Debugging log
+
+          if (this.selectedWorkout === "squats") {
+            document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
+            document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
+            document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"}%`;
+            document.getElementById("kneeAngleFeedback").textContent = "Great job on your squats!";
+            document.getElementById("backAngleFeedback").textContent = "Keep your back straight!";
+          } else if (this.selectedWorkout === "bicepCurls") {
+            document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Left Elbow Angle: ${this.maxLeftElbowAngle.toFixed(2)}°`;
+            document.getElementById("maxBackAngleDisplay").textContent = `Maximum Right Elbow Angle: ${this.maxRightElbowAngle.toFixed(2)}°`;
+            document.getElementById("finalAccuracyDisplay").textContent = `Total Curls: ${this.curlCount}`;
+            document.getElementById("kneeAngleFeedback").textContent = "Keep your elbows steady!";
+            document.getElementById("backAngleFeedback").textContent = "Great job on your curls!";
+          }
+
           console.log("Workout stopped");
         },
 
         resetRepState() {
-          this.maxKneeAngle = 0;
-          this.maxBackAngle = 0;
-        },
-
-        updateMaxAngles(kneeAngle, backAngle) {
-          if (kneeAngle > this.maxKneeAngle) this.maxKneeAngle = kneeAngle;
-          if (backAngle > this.maxBackAngle) this.maxBackAngle = backAngle;
-        },
-
-        updateOverallMaxAngles() {
-          if (this.maxKneeAngle > this.maxKneeAngleOverall) {
-            this.maxKneeAngleOverall = this.maxKneeAngle;
-          }
-          if (this.maxBackAngle > this.maxBackAngleOverall) {
-            this.maxBackAngleOverall = this.maxBackAngle;
-          }
-        },
-
-        calculateAccuracy() {
-          const kneeAccuracy = Math.max(
-            0,
-            (1 - Math.abs(this.maxKneeAngle - this.idealKneeAngle) / this.idealKneeAngle) * 100
-          ).toFixed(2);
-
-          const backAccuracy = Math.max(
-            0,
-            (1 - Math.abs(this.maxBackAngle - this.idealBackAngle) / 90) * 100
-          ).toFixed(2);
-
-          return ((parseFloat(kneeAccuracy) + parseFloat(backAccuracy)) / 2).toFixed(2);
+          this.isSquatting = false;
+          this.isCurling = false;
         },
 
         handleSquatStart() {
           this.isSquatting = true;
-          this.resetRepState();
           console.log("Squat started");
         },
 
@@ -244,32 +261,53 @@
             this.lastSquatTime = currentTime;
             this.isSquatting = false;
             this.squatCount += 1;
-
-            // Update the squat counter in the UI
             document.getElementById("squatCounter").textContent = `Total Squats: ${this.squatCount}`;
-
-            const repAccuracy = this.calculateAccuracy();
-            this.totalAccuracy = (
-              (this.totalAccuracy * this.totalReps + parseFloat(repAccuracy)) /
-              (this.totalReps + 1)
-            ).toFixed(2);
-            this.totalReps += 1;
-
-            this.updateOverallMaxAngles();
-
-            // Update the Total Accuracy in the UI
-            document.getElementById("totalAccuracy").textContent = `Total Accuracy: ${this.totalAccuracy}%`;
-
             console.log(`Squat ${this.squatCount} completed`);
-            console.log(`Rep Accuracy: ${repAccuracy}%`);
           }
         },
 
-        displaySummary() {
-          document.getElementById("workoutSummary").style.display = "block";
-          document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
-          document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
-          document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy}%`;
+        handleCurlStart() {
+          this.isCurling = true;
+          console.log("Curl started");
+        },
+
+        handleCurlEnd() {
+          const currentTime = Date.now();
+          if (currentTime - this.lastCurlTime >= this.CURL_COOLDOWN) {
+            this.lastCurlTime = currentTime;
+            this.isCurling = false;
+            this.curlCount += 1;
+            document.getElementById("squatCounter").textContent = `Total Curls: ${this.curlCount}`;
+            console.log(`Curl ${this.curlCount} completed`);
+          }
+        },
+
+        updateMaxAnglesForSquats(kneeAngle, spineAngle) {
+          // Track the maximum knee angle
+          if (!this.maxKneeAngleOverall || kneeAngle > this.maxKneeAngleOverall) {
+            this.maxKneeAngleOverall = kneeAngle;
+          }
+
+          // Track the maximum spine angle
+          if (!this.maxBackAngleOverall || spineAngle > this.maxBackAngleOverall) {
+            this.maxBackAngleOverall = spineAngle;
+          }
+
+          console.log(`Updated Max Angles for Squats - Knee: ${this.maxKneeAngleOverall}, Spine: ${this.maxBackAngleOverall}`);
+        },
+
+        updateMaxAnglesForCurls(leftElbowAngle, rightElbowAngle) {
+          // Track the maximum left elbow angle
+          if (!this.maxLeftElbowAngle || leftElbowAngle > this.maxLeftElbowAngle) {
+            this.maxLeftElbowAngle = leftElbowAngle;
+          }
+
+          // Track the maximum right elbow angle
+          if (!this.maxRightElbowAngle || rightElbowAngle > this.maxRightElbowAngle) {
+            this.maxRightElbowAngle = rightElbowAngle;
+          }
+
+          console.log(`Updated Max Angles for Curls - Left Elbow: ${this.maxLeftElbowAngle}, Right Elbow: ${this.maxRightElbowAngle}`);
         },
       };
 
@@ -312,13 +350,15 @@
         workout.totalReps = 0;
         workout.maxKneeAngleOverall = 0;
         workout.maxBackAngleOverall = 0;
+        workout.maxLeftElbowAngle = 0;
+        workout.maxRightElbowAngle = 0;
 
         // Reset UI elements
         document.getElementById("squatCounter").textContent = "Total Squats: 0";
         document.getElementById("totalAccuracy").textContent = "Total Accuracy: Calculating...";
-        document.getElementById("maxKneeAngleDisplay").textContent = "Maximum Knee Angle: N/A";
-        document.getElementById("maxBackAngleDisplay").textContent = "Maximum Back Angle: N/A";
-        document.getElementById("finalAccuracyDisplay").textContent = "Final Accuracy: N/A";
+        document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
+document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
+document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy ? this.totalAccuracy.toFixed(2) : "N/A"}%`;
         document.getElementById("workoutSummary").style.display = "none";
         document.getElementById("countdownTimer").textContent = "Ready to start a new workout!";
         document.getElementById("restartWorkout").style.display = "none";
@@ -331,14 +371,23 @@
         button.addEventListener("click", () => {
           const selectedWorkout = button.dataset.workout;
 
-          if (selectedWorkout === "squats") {
-            // Hide the landing page and show the workout interface
-            document.getElementById("landingPage").style.display = "none";
-            document.getElementById("workoutInterface").style.display = "block";
+          // Set the selected workout
+          workout.selectedWorkout = selectedWorkout;
 
+          // Hide the landing page and show the workout interface
+          document.getElementById("landingPage").style.display = "none";
+          document.getElementById("workoutInterface").style.display = "block";
+
+          if (selectedWorkout === "squats") {
+            // Start squats detection
+            pose.onResults(detectSquats);
+            workout.start();
             console.log("Squats workout selected");
-          } else {
-            alert(`${selectedWorkout} functionality is coming soon!`);
+          } else if (selectedWorkout === "bicepCurls") {
+            // Start curls detection
+            pose.onResults(detectCurls);
+            workout.start();
+            console.log("Bicep Curls workout selected");
           }
         });
       });
@@ -361,6 +410,33 @@
       });
 
       pose.onResults((results) => {
+        if (!workout.isActive) {
+          return; // Do nothing if the workout is not active
+        }
+
+        const selectedWorkout = workout.selectedWorkout;
+
+        if (selectedWorkout === "squats") {
+          detectSquats(results);
+        } else if (selectedWorkout === "bicepCurls") {
+          detectCurls(results);
+        }
+      });
+
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await pose.send({ image: videoElement });
+        },
+        width: 1280,
+        height: 720,
+      });
+
+      camera.start();
+
+      // Detection function for squats
+      const detectSquats = (results) => {
+        if (!workout.isActive) return; // Ensure the workout is active
+
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
@@ -379,45 +455,81 @@
           // Calculate squat metrics
           const metrics = calculateSquatMetrics(landmarks);
 
-          // Update live metrics
+          // Update live metrics for squats
           document.getElementById("liveKneeAngle").textContent = `Knee Angle: ${(
-            (metrics.leftKneeAngle + metrics.rightKneeAngle) /
-            2
+            (metrics.leftKneeAngle + metrics.rightKneeAngle) / 2
           ).toFixed(2)}°`;
           document.getElementById("liveHipAngle").textContent = `Hip Angle: ${(
-            (metrics.leftHipAngle + metrics.rightHipAngle) /
-            2
+            (metrics.leftHipAngle + metrics.rightHipAngle) / 2
           ).toFixed(2)}°`;
           document.getElementById("liveSpineAngle").textContent = `Spine Angle: ${metrics.spineAngle.toFixed(2)}°`;
 
-          // Detect squats
-          if (workout.isActive) {
-            const averageKneeAngle = (metrics.leftKneeAngle + metrics.rightKneeAngle) / 2;
-            const backAngle = metrics.spineAngle;
+          // Detect squat motion
+          if (!workout.isSquatting && metrics.leftKneeAngle > 70 && metrics.rightKneeAngle > 70) {
+            workout.handleSquatStart();
+          } else if (workout.isSquatting && metrics.leftKneeAngle < 15 && metrics.rightKneeAngle < 15) {
+            workout.handleSquatEnd();
+          }
 
-            if (!workout.isSquatting && averageKneeAngle > 75) {
-              workout.handleSquatStart();
-            } else if (workout.isSquatting && averageKneeAngle < 15) {
-              workout.handleSquatEnd();
-            }
-
-            // Track max angles during the current rep
-            if (workout.isSquatting) {
-              workout.updateMaxAngles(averageKneeAngle, backAngle);
-            }
+          // Track max angles during the current rep
+          if (workout.isSquatting) {
+            workout.updateMaxAnglesForSquats(
+              (metrics.leftKneeAngle + metrics.rightKneeAngle) / 2,
+              metrics.spineAngle
+            );
           }
         }
-      });
+      };
 
-      const camera = new Camera(videoElement, {
-        onFrame: async () => {
-          await pose.send({ image: videoElement });
-        },
-        width: 1280,
-        height: 720,
-      });
+      // Detection function for bicep curls
+      const detectCurls = (results) => {
+        if (!workout.isActive) return; // Ensure the workout is active
 
-      camera.start();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+        if (results.poseLandmarks) {
+          const landmarks = results.poseLandmarks;
+
+          // Draw landmarks and connections
+          drawLandmarksAndConnections(
+            canvasCtx,
+            landmarks,
+            POSE_CONNECTIONS,
+            canvasElement.width,
+            canvasElement.height
+          );
+
+          // Calculate elbow angles
+          const leftElbowAngle = calculateAngle(landmarks[11], landmarks[13], landmarks[15]);
+          const rightElbowAngle = calculateAngle(landmarks[12], landmarks[14], landmarks[16]);
+
+          // Update live metrics for curls
+          document.getElementById("liveKneeAngle").textContent = `Left Elbow Angle: ${leftElbowAngle.toFixed(2)}°`;
+          document.getElementById("liveHipAngle").textContent = `Right Elbow Angle: ${rightElbowAngle.toFixed(2)}°`;
+          document.getElementById("liveSpineAngle").textContent = ""; // Clear unused metric
+
+          // Calculate live score
+          const leftScore = calculateCurlScore(leftElbowAngle);
+          const rightScore = calculateCurlScore(rightElbowAngle);
+          const averageScore = ((leftScore + rightScore) / 2).toFixed(2);
+
+          // Display live score
+          document.getElementById("totalAccuracy").textContent = `Live Score: ${averageScore}%`;
+
+          // Detect curl motion
+          if (!workout.isCurling && leftElbowAngle < 60 && rightElbowAngle < 60) {
+            workout.handleCurlStart();
+          } else if (workout.isCurling && leftElbowAngle > 150 && rightElbowAngle > 150) {
+            workout.handleCurlEnd();
+          }
+
+          // Track max angles during the current rep
+          if (workout.isCurling) {
+            workout.updateMaxAnglesForCurls(leftElbowAngle, rightElbowAngle);
+          }
+        }
+      };
 
       // Helper function to calculate squat metrics
       const calculateSquatMetrics = (landmarks) => {
@@ -455,6 +567,36 @@
         const magnitudeBC = Math.sqrt(bc.x * bc.x + bc.y * bc.y);
         const angle = Math.acos(dotProduct / (magnitudeAB * magnitudeBC));
         return (angle * 180) / Math.PI; // Convert to degrees
+      };
+
+      // Helper function to calculate curl score
+      const calculateCurlScore = (elbowAngle) => {
+        let score = 0;
+
+        // Check if the angle is within the ideal range for the top of the curl
+        if (elbowAngle >= IDEAL_CURL_TOP_ANGLE.min && elbowAngle <= IDEAL_CURL_TOP_ANGLE.max) {
+          score = 100; // Perfect score for the top of the curl
+        }
+        // Check if the angle is within the ideal range for the bottom of the curl
+        else if (elbowAngle >= IDEAL_CURL_BOTTOM_ANGLE.min && elbowAngle <= IDEAL_CURL_BOTTOM_ANGLE.max) {
+          score = 100; // Perfect score for the bottom of the curl
+        }
+        // Calculate a proportional score for angles outside the ideal range
+        else {
+          const topDeviation = Math.min(
+            Math.abs(elbowAngle - IDEAL_CURL_TOP_ANGLE.min),
+            Math.abs(elbowAngle - IDEAL_CURL_TOP_ANGLE.max)
+          );
+          const bottomDeviation = Math.min(
+            Math.abs(elbowAngle - IDEAL_CURL_BOTTOM_ANGLE.min),
+            Math.abs(elbowAngle - IDEAL_CURL_BOTTOM_ANGLE.max)
+          );
+
+          const deviation = Math.min(topDeviation, bottomDeviation);
+          score = Math.max(0, 100 - deviation * 2); // Deduct points based on deviation
+        }
+
+        return score;
       };
 
       // Helper function to draw landmarks and connections
