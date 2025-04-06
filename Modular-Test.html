@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PeTAI</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #000; /* Set background to black */
+        color: #fff; /* Set text color to white */
+      }
+
+      header {
+        background-color: #007bff;
+        color: white;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .workout-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #1a1a1a; /* Dark gray for container background */
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1); /* Subtle white shadow */
+      }
+
+      .video-container {
+        width: 80dvw;
+        height: 80dvh;
+        aspect-ratio: 16 / 9;
+        position: relative;
+        background-color: #333; /* Darker gray for video background */
+        margin: 20px auto; /* Center the video container */
+        border-radius: 10px;
+        overflow: hidden; /* Ensure the metrics box stays inside the container */
+      }
+
+      #videoElement,
+      #outputCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #landmarkData {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      #landmarkData p {
+        margin: 5px 0;
+      }
+
+      .metrics-box {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7); /* Black with 70% transparency */
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: left;
+      }
+
+      .metrics-box p {
+        margin: 5px 0;
+      }
+
+      .workout-controls {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .workout-controls button {
+        padding: 10px 20px;
+        border: none;
+        background-color: #007bff; /* Blue button */
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 0 10px;
+      }
+
+      .workout-controls button:disabled {
+        background-color: #555; /* Gray for disabled buttons */
+        cursor: not-allowed;
+      }
+
+      #workoutSummary {
+        text-align: center;
+        margin-top: 20px;
+        display: none;
+      }
+
+      #workoutSummary p {
+        margin: 5px 0;
+      }
+
+      #landingPage button {
+        padding: 20px 40px;
+        font-size: 18px;
+        margin: 20px;
+        background-color: #007bff; /* Blue button */
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      #landingPage button:hover {
+        background-color: #0056b3; /* Darker blue on hover */
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+  </head>
+  <body>
+
+    <!-- Landing Page -->
+    <div id="landingPage" style="text-align: center; margin-top: 50px;">
+      <h1>Choose Your Workout</h1>
+      <button class="workout-selection" data-workout="squats">Squats</button>
+      <button class="workout-selection" data-workout="bicepCurls">Bicep Curls</button>
+      <button class="workout-selection" data-workout="planks">Planks</button>
+    </div>
+
+    <!-- Workout Interface -->
+    <div id="workoutInterface" style="display: none;">
+      <div class="video-container">
+        <video id="videoElement" autoplay muted></video>
+        <canvas id="outputCanvas"></canvas>
+
+        <!-- Translucent Metrics Box -->
+        <div id="landmarkData" class="metrics-box">
+          <p id="liveKneeAngle">Knee Angle: Calculating...</p>
+          <p id="liveHipAngle">Hip Angle: Calculating...</p>
+          <p id="liveSpineAngle">Spine Angle: Calculating...</p>
+          <p id="totalAccuracy">Total Accuracy: Calculating...</p>
+          <p id="squatCounter">Total Squats: 0</p>
+          <p id="countdownTimer" style="font-size: 14px; font-weight: bold; color: red;">Ready to start!</p>
+        </div>
+      </div>
+
+      <div class="workout-controls">
+        <button id="startWorkout">Start Workout</button>
+        <button id="endWorkout" disabled>End Workout</button>
+      </div>
+
+      <div id="workoutSummary">
+        <h3>Workout Summary</h3>
+        <p id="maxKneeAngleDisplay">Maximum Knee Angle: N/A</p>
+        <p id="maxBackAngleDisplay">Maximum Back Angle: N/A</p>
+        <p id="finalAccuracyDisplay">Final Accuracy: N/A</p>
+        <div class="workout-controls">
+          <button id="restartWorkout">Restart Workout</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Modular workout logic
+      const workout = {
+        isActive: false,
+        isSquatting: false,
+        squatCount: 0,
+        lastSquatTime: 0,
+        maxKneeAngle: 0,
+        maxBackAngle: 0,
+        maxKneeAngleOverall: 0,
+        maxBackAngleOverall: 0,
+        totalAccuracy: 0,
+        totalReps: 0,
+        idealKneeAngle: 90,
+        idealBackAngle: 0,
+        SQUAT_COOLDOWN: 500,
+
+        start() {
+          this.isActive = true;
+          this.resetRepState();
+          this.squatCount = 0; // Reset squat count
+          document.getElementById("squatCounter").textContent = `Total Squats: ${this.squatCount}`;
+          console.log("Workout started");
+        },
+
+        stop() {
+          this.isActive = false;
+          document.getElementById("startWorkout").disabled = false;
+          document.getElementById("endWorkout").disabled = true;
+          this.displaySummary();
+          console.log("Workout stopped");
+        },
+
+        resetRepState() {
+          this.maxKneeAngle = 0;
+          this.maxBackAngle = 0;
+        },
+
+        updateMaxAngles(kneeAngle, backAngle) {
+          if (kneeAngle > this.maxKneeAngle) this.maxKneeAngle = kneeAngle;
+          if (backAngle > this.maxBackAngle) this.maxBackAngle = backAngle;
+        },
+
+        updateOverallMaxAngles() {
+          if (this.maxKneeAngle > this.maxKneeAngleOverall) {
+            this.maxKneeAngleOverall = this.maxKneeAngle;
+          }
+          if (this.maxBackAngle > this.maxBackAngleOverall) {
+            this.maxBackAngleOverall = this.maxBackAngle;
+          }
+        },
+
+        calculateAccuracy() {
+          const kneeAccuracy = Math.max(
+            0,
+            (1 - Math.abs(this.maxKneeAngle - this.idealKneeAngle) / this.idealKneeAngle) * 100
+          ).toFixed(2);
+
+          const backAccuracy = Math.max(
+            0,
+            (1 - Math.abs(this.maxBackAngle - this.idealBackAngle) / 90) * 100
+          ).toFixed(2);
+
+          return ((parseFloat(kneeAccuracy) + parseFloat(backAccuracy)) / 2).toFixed(2);
+        },
+
+        handleSquatStart() {
+          this.isSquatting = true;
+          this.resetRepState();
+          console.log("Squat started");
+        },
+
+        handleSquatEnd() {
+          const currentTime = Date.now();
+          if (currentTime - this.lastSquatTime >= this.SQUAT_COOLDOWN) {
+            this.lastSquatTime = currentTime;
+            this.isSquatting = false;
+            this.squatCount += 1;
+
+            // Update the squat counter in the UI
+            document.getElementById("squatCounter").textContent = `Total Squats: ${this.squatCount}`;
+
+            const repAccuracy = this.calculateAccuracy();
+            this.totalAccuracy = (
+              (this.totalAccuracy * this.totalReps + parseFloat(repAccuracy)) /
+              (this.totalReps + 1)
+            ).toFixed(2);
+            this.totalReps += 1;
+
+            this.updateOverallMaxAngles();
+
+            // Update the Total Accuracy in the UI
+            document.getElementById("totalAccuracy").textContent = `Total Accuracy: ${this.totalAccuracy}%`;
+
+            console.log(`Squat ${this.squatCount} completed`);
+            console.log(`Rep Accuracy: ${repAccuracy}%`);
+          }
+        },
+
+        displaySummary() {
+          document.getElementById("workoutSummary").style.display = "block";
+          document.getElementById("maxKneeAngleDisplay").textContent = `Maximum Knee Angle: ${this.maxKneeAngleOverall.toFixed(2)}°`;
+          document.getElementById("maxBackAngleDisplay").textContent = `Maximum Back Angle: ${this.maxBackAngleOverall.toFixed(2)}°`;
+          document.getElementById("finalAccuracyDisplay").textContent = `Final Accuracy: ${this.totalAccuracy}%`;
+        },
+      };
+
+      // Button event listeners
+      document.getElementById("startWorkout").addEventListener("click", () => {
+        let countdown = 5; // Set countdown to 5 seconds
+        const countdownElement = document.getElementById("countdownTimer");
+        countdownElement.textContent = `Starting in ${countdown} seconds...`;
+
+        const countdownInterval = setInterval(() => {
+          countdown -= 1;
+          if (countdown > 0) {
+            countdownElement.textContent = `Starting in ${countdown} seconds...`;
+          } else {
+            clearInterval(countdownInterval);
+            countdownElement.textContent = "Workout started!";
+            document.getElementById("startWorkout").disabled = true;
+            document.getElementById("endWorkout").disabled = false;
+
+            // Start the workout
+            workout.start();
+          }
+        }, 1000); // Update every second
+      });
+
+      document.getElementById("endWorkout").addEventListener("click", () => {
+        workout.stop();
+
+        // Ensure the Restart and Resume buttons are displayed
+        document.getElementById("restartWorkout").style.display = "inline-block";
+
+        console.log("Workout stopped. Restart and Resume buttons are now visible.");
+      });
+
+      document.getElementById("restartWorkout").addEventListener("click", () => {
+        // Reset all workout variables
+        workout.isActive = false;
+        workout.squatCount = 0;
+        workout.totalAccuracy = 0;
+        workout.totalReps = 0;
+        workout.maxKneeAngleOverall = 0;
+        workout.maxBackAngleOverall = 0;
+
+        // Reset UI elements
+        document.getElementById("squatCounter").textContent = "Total Squats: 0";
+        document.getElementById("totalAccuracy").textContent = "Total Accuracy: Calculating...";
+        document.getElementById("maxKneeAngleDisplay").textContent = "Maximum Knee Angle: N/A";
+        document.getElementById("maxBackAngleDisplay").textContent = "Maximum Back Angle: N/A";
+        document.getElementById("finalAccuracyDisplay").textContent = "Final Accuracy: N/A";
+        document.getElementById("workoutSummary").style.display = "none";
+        document.getElementById("countdownTimer").textContent = "Ready to start a new workout!";
+        document.getElementById("restartWorkout").style.display = "none";
+
+        console.log("Workout restarted");
+      });
+
+      // Handle workout selection
+      document.querySelectorAll(".workout-selection").forEach((button) => {
+        button.addEventListener("click", () => {
+          const selectedWorkout = button.dataset.workout;
+
+          if (selectedWorkout === "squats") {
+            // Hide the landing page and show the workout interface
+            document.getElementById("landingPage").style.display = "none";
+            document.getElementById("workoutInterface").style.display = "block";
+
+            console.log("Squats workout selected");
+          } else {
+            alert(`${selectedWorkout} functionality is coming soon!`);
+          }
+        });
+      });
+
+      // MediaPipe Pose setup
+      const videoElement = document.getElementById("videoElement");
+      const canvasElement = document.getElementById("outputCanvas");
+      const canvasCtx = canvasElement.getContext("2d");
+
+      const pose = new Pose({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      });
+
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      pose.onResults((results) => {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+        if (results.poseLandmarks) {
+          const landmarks = results.poseLandmarks;
+
+          // Draw landmarks and connections
+          drawLandmarksAndConnections(
+            canvasCtx,
+            landmarks,
+            POSE_CONNECTIONS,
+            canvasElement.width,
+            canvasElement.height
+          );
+
+          // Calculate squat metrics
+          const metrics = calculateSquatMetrics(landmarks);
+
+          // Update live metrics
+          document.getElementById("liveKneeAngle").textContent = `Knee Angle: ${(
+            (metrics.leftKneeAngle + metrics.rightKneeAngle) /
+            2
+          ).toFixed(2)}°`;
+          document.getElementById("liveHipAngle").textContent = `Hip Angle: ${(
+            (metrics.leftHipAngle + metrics.rightHipAngle) /
+            2
+          ).toFixed(2)}°`;
+          document.getElementById("liveSpineAngle").textContent = `Spine Angle: ${metrics.spineAngle.toFixed(2)}°`;
+
+          // Detect squats
+          if (workout.isActive) {
+            const averageKneeAngle = (metrics.leftKneeAngle + metrics.rightKneeAngle) / 2;
+            const backAngle = metrics.spineAngle;
+
+            if (!workout.isSquatting && averageKneeAngle > 75) {
+              workout.handleSquatStart();
+            } else if (workout.isSquatting && averageKneeAngle < 15) {
+              workout.handleSquatEnd();
+            }
+
+            // Track max angles during the current rep
+            if (workout.isSquatting) {
+              workout.updateMaxAngles(averageKneeAngle, backAngle);
+            }
+          }
+        }
+      });
+
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await pose.send({ image: videoElement });
+        },
+        width: 1280,
+        height: 720,
+      });
+
+      camera.start();
+
+      // Helper function to calculate squat metrics
+      const calculateSquatMetrics = (landmarks) => {
+        const leftHip = landmarks[23];
+        const rightHip = landmarks[24];
+        const leftKnee = landmarks[25];
+        const rightKnee = landmarks[26];
+        const leftAnkle = landmarks[27];
+        const rightAnkle = landmarks[28];
+        const leftShoulder = landmarks[11];
+        const rightShoulder = landmarks[12];
+
+        // Calculate angles
+        const leftKneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
+        const rightKneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
+        const leftHipAngle = calculateAngle(leftShoulder, leftHip, leftKnee);
+        const rightHipAngle = calculateAngle(rightShoulder, rightHip, rightKnee);
+        const spineAngle = calculateAngle(leftShoulder, leftHip, leftAnkle);
+
+        return {
+          leftKneeAngle,
+          rightKneeAngle,
+          leftHipAngle,
+          rightHipAngle,
+          spineAngle,
+        };
+      };
+
+      // Helper function to calculate angles
+      const calculateAngle = (pointA, pointB, pointC) => {
+        const ab = { x: pointB.x - pointA.x, y: pointB.y - pointA.y };
+        const bc = { x: pointC.x - pointB.x, y: pointC.y - pointB.y };
+        const dotProduct = ab.x * bc.x + ab.y * bc.y;
+        const magnitudeAB = Math.sqrt(ab.x * ab.x + ab.y * ab.y);
+        const magnitudeBC = Math.sqrt(bc.x * bc.x + bc.y * bc.y);
+        const angle = Math.acos(dotProduct / (magnitudeAB * magnitudeBC));
+        return (angle * 180) / Math.PI; // Convert to degrees
+      };
+
+      // Helper function to draw landmarks and connections
+      const drawLandmarksAndConnections = (ctx, landmarks, connections, canvasWidth, canvasHeight) => {
+        // Draw landmarks (dots)
+        landmarks.forEach((landmark) => {
+          ctx.beginPath();
+          ctx.arc(
+            landmark.x * canvasWidth,
+            landmark.y * canvasHeight,
+            3, // Smaller radius for the dots
+            0,
+            2 * Math.PI
+          );
+          ctx.fillStyle = "#FFFFFF"; // White color for dots
+          ctx.fill();
+        });
+
+        // Draw connections (lines)
+        connections.forEach(([startIdx, endIdx]) => {
+          const startLandmark = landmarks[startIdx];
+          const endLandmark = landmarks[endIdx];
+
+          ctx.beginPath();
+          ctx.moveTo(
+            startLandmark.x * canvasWidth,
+            startLandmark.y * canvasHeight
+          );
+          ctx.lineTo(
+            endLandmark.x * canvasWidth,
+            endLandmark.y * canvasHeight
+          );
+          ctx.strokeStyle = "#00FF00"; // Green color for lines
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      };
+
+      // MediaPipe Pose connections
+      const POSE_CONNECTIONS = [
+        [11, 13], // Left shoulder to left elbow
+        [13, 15], // Left elbow to left wrist
+        [12, 14], // Right shoulder to right elbow
+        [14, 16], // Right elbow to right wrist
+        [11, 23], // Left shoulder to left hip
+        [12, 24], // Right shoulder to right hip
+        [23, 25], // Left hip to left knee
+        [24, 26], // Right hip to right knee
+        [25, 27], // Left knee to left ankle
+        [26, 28], // Right knee to right ankle
+      ];
+    </script>
+  </body>
+</html>
